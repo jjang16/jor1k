@@ -26,8 +26,9 @@ function jor1kGUI(parameters)
 
     this.params.path = this.params.path || "";
 
+	this.params.system.snapshotURL = this.params.system.snapshotURL || "";
     this.params.system.kernelURL = this.params.system.kernelURL || "vmlinux.bin.bz2";
-    this.params.system.memorysize = this.params.system.memorysize || 32;
+    this.params.system.memorysizstem.memorysize || 32;
     this.params.system.arch = this.params.system.arch || "or1k";
     this.params.system.cpu = this.params.system.cpu || "asm";
     this.params.system.ncores = this.params.system.ncores || 1;
@@ -211,7 +212,11 @@ jor1kGUI.prototype.Reset = function () {
     this.executepending = false; // if we rec an execute message while paused      
     message.Send("Init", this.params.system);
     message.Send("Reset");
-    message.Send("LoadAndStart", this.params.system.kernelURL);
+	if (this.params.system.snapshotURL == "")
+    	message.Send("LoadAndStart", this.params.system.kernelURL);
+	else
+		message.Send("LoadAndStartSnapshot", this.params.system.snapshotURL);
+
     message.Send("LoadFilesystem", this.params.fs);
 
     if (this.terms.length > 0) {

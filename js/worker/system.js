@@ -70,11 +70,13 @@ var SYSTEM_HALT = 0x3; // Idle
 function System() {
     // the Init function is called by the master thread.
     message.Register("LoadAndStart", this.LoadImageAndStart.bind(this) );
+	message.Register("LoadAndStartSnapshot", this.LoadSnapshotAndStart.bind(this));
     message.Register("execute", this.MainLoop.bind(this)	);
     message.Register("Init", this.Init.bind(this) );
     message.Register("Reset", this.Reset.bind(this) );
     message.Register("ChangeCore", this.ChangeCPU.bind(this) );
     message.Register("PrintOnAbort", this.PrintState.bind(this) );
+	message.Register("CreateSnapshot", this.CreateAndUploadSnapshot.bind(this));
 
     message.Register("GetIPS", function(data) {
         message.Send("GetIPS", this.ips);
@@ -82,6 +84,17 @@ function System() {
     }.bind(this)
 
     );
+}
+
+// only support snapshot on or1k fast cpu
+System.prototype.CreateAndUploadSnapshot = function(url) {
+	var f = this.cpu.GetFlags();
+	message.Debug("please copy paste the flags : " + f);
+	this.cpu.GetState();
+	var heap = this.heap;
+	utils.UploadBinaryResource(url, "heap", heap, 
+			function() {message.Debug("snapshot upload success to " + url)},
+			function(error) {message.Debug(error)});
 }
 
 System.prototype.CreateCPU = function(cpuname, arch) {
@@ -121,10 +134,10 @@ System.prototype.Init = function(system) {
     if (!system.ncores) system.ncores = 1;
 
     // this must be a power of two.
-    var ramoffset = 0x100000;
+    this.ramoffset = 0x100000;
     this.heap = new ArrayBuffer(this.memorysize*0x100000); 
     this.memorysize--; // - the lower 1 MB are used for the cpu cores
-    this.ram = new RAM(this.heap, ramoffset);
+    this.ram = new RAM(this.heap, this.ramoffset);
 
     if (system.arch == "riscv") {
         this.htif = new HTIF(this.ram, this);
@@ -280,6 +293,46 @@ System.prototype.LoadImageAndStart = function(url) {
     }
 
 };
+
+System.prototype.LoadSnapshotAndStart = function(url) {
+    this.SendStringToTerminal("\r================================================================================");;
+
+	this.SendStringToTerminal("\r\nLoading VM snapshot from web server. Please wait ...\r\n");
+	var loadData = {"heap" : false, "object" : false};
+	utils.LoadBinaryResource(
+		urls.heapURL,
+		function(buffer) {
+			loadData.heap = buffer;
+			this.OnSnapshotLoaded(buffer).bind(this);
+		}.bind(this),
+		function(error){message.Debug("Load heap snapshot fail!";) throw error;}
+	);
+};
+
+System.prototype.OnSnapshotLoaded = function(loadData) {
+	this.SendStringToTerminal("Decompressing snapshot...\r\n");
+
+	/*
+	 * TODO (or not)
+	 * endianness check
+	 * loading a snapshot of a different memory & device config.
+	 */
+
+	// updating heap
+	var length = 0;
+	bzip2.simple(buffer8, function(x){this.heap[length++] = x;}.bind(this));
+
+	if (length != ram.heap.byteLength) 
+		message.Debug("snapshot heap size and current heap size doesn't match!");
+
+	this.cpu.PutState();
+	this.cpu.SetFlags();
+
+    message.Debug("Finished load process. You're ready to go");
+    this.status = SYSTEM_RUN;
+
+    message.Send("execute", 0);
+}
 
 System.prototype.PatchKernel = function(length)
 {
