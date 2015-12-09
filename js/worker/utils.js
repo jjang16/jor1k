@@ -43,6 +43,19 @@ function CopyBinary(to, from, size, buffersrc, bufferdest) {
     }
 }
 
+function fillFromJSONObjArr(to, from) {
+	for (var i = 0; i < from.len; i++) {
+		to[i] = from[i];
+	}
+	/*
+	if (from.len < 10000) {
+		console.log("jsonobj to arr --");
+		console.log("from : " + JSON.stringify(from));
+		console.log("to : " + JSON.stringify(to));
+	}
+	*/
+}
+
 function LoadBinaryResource(url, OnSuccess, OnError) {
     var req = new XMLHttpRequest();
     // open might fail, when we try to open an unsecure address, when the main page is secure
@@ -145,15 +158,36 @@ function DownloadAllAsync(urls, OnSuccess, OnError) {
     });
 }
 
+// temp version that works
 function UploadBinaryResource(url, filename, data, OnSuccess, OnError) {
+    var xhr = new XMLHttpRequest();
+	
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader('content-type', 'application/octet-stream');
+	xhr.send(data);
+}
+
+function UploadTextResource(url, filename, data, OnSuccess, OnError) {
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader('content-type', 'text/plain');
+	xhr.send(data);
+}
+
+/*
+function UploadBinaryResource(url, filename, data, OnSuccess, OnError) {
+	
+	var string = new TextDecoder().decode(new Uint8Array(data));
 
     var boundary = "xxxxxxxxx";
 
     var xhr = new XMLHttpRequest();
     xhr.open('post', url, true);
-    xhr.setRequestHeader("Content-Type", "multipart/form-data, boundary=" + boundary);
-    xhr.setRequestHeader("Content-Length", data.length);
-    xhr.onreadystatechange = function () {
+    xhr.setRequestHeader("Content-Type", boundary=" + boundary);
+    //xhr.setRequestHeader("Content-Length", 100);
+	//console.log(100);
+	xhr.onreadystatechange = function (req) {
         if (req.readyState != 4) {
             return;
         }
@@ -164,6 +198,7 @@ function UploadBinaryResource(url, filename, data, OnSuccess, OnError) {
         OnSuccess(this.responseText);
     };
 
+	
     var bodyheader = "--" + boundary + "\r\n";
     bodyheader += 'Content-Disposition: form-data; name="uploaded"; filename="' + filename + '"\r\n';
     bodyheader += "Content-Type: application/octet-stream\r\n\r\n";
@@ -171,20 +206,24 @@ function UploadBinaryResource(url, filename, data, OnSuccess, OnError) {
     var bodyfooter = "\r\n";
     bodyfooter += "--" + boundary + "--";
 
-    var newdata = new Uint8Array(data.length + bodyheader.length + bodyfooter.length);
+    var newdata = new Uint8Array(string.length + bodyheader.length + bodyfooter.length);
     var offset = 0;
     for(var i=0; i<bodyheader.length; i++)
         newdata[offset++] = bodyheader.charCodeAt(i);
 
-    for(var i=0; i<data.length; i++)
-        newdata[offset++] = data[i];
+    for(var i=0; i<string.length; i++)
+        newdata[offset++] = string[i];
 
 
     for(var i=0; i<bodyfooter.length; i++)
         newdata[offset++] = bodyfooter.charCodeAt(i);
 
     xhr.send(newdata.buffer);
+	
+	//xhr.send(data);
 }
+*/
+
 
 /*
 function LoadBZIP2Resource(url, OnSuccess, OnError)
@@ -208,6 +247,9 @@ module.exports.int32 = int32;
 module.exports.uint32 = uint32;
 module.exports.ToHex = ToHex;
 module.exports.ToBin = ToBin;
+module.exports.UploadBinaryResource = UploadBinaryResource;
+module.exports.fillFromJSONObjArr = fillFromJSONObjArr;
+module.exports.UploadTextResource = UploadTextResource;
 module.exports.LoadBinaryResource = LoadBinaryResource;
 module.exports.LoadBinaryResourceII = LoadBinaryResourceII;
 module.exports.LoadTextResource = LoadTextResource;

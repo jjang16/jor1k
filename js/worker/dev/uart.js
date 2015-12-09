@@ -106,6 +106,9 @@ UARTDev.prototype.Reset = function() {
     this.txbuf = new Array(); // transmit fifo buffer.
 }
 
+UARTDev.prototype.stateVars = 
+	['LCR', 'LSR', 'MSR', 'ints', 'IIR', 'IER', 'DLL', 'DLH', 'FCR', 'MCR', 'rxbuf', 'txbuf'];
+
 UARTDev.prototype.Step = function() {
     if(this.txbuf.length != 0) {
         message.Send("tty"+this.id, this.txbuf);

@@ -55,6 +55,7 @@ var VRING_DESC_F_INDIRECT =  4; /* This means the buffer contains a list of buff
 function CopyMemoryToBuffer(from, to, offset, size) {
     for(var i=0; i<size; i++)
         to[i] = from.Read8(offset+i);
+
 }
 
 function CopyBufferToMemory(from, to, offset, size) {
@@ -82,6 +83,37 @@ function VirtIODev(intdev, intno, ramdev, device) {
 
     this.Reset();
 }
+
+VirtIODev.prototype.stateVars = ['intno', 'queuenum', 'queueready', 'queuepfn', 'descaddr',
+	'usedaddr', 'availaddr', 'lastavailidx', 'status', 'intstatus', 'pagesize', 'align',
+	'availidx', 'hostfeaturewordselect', 'queuesel'];
+
+VirtIODev.prototype.OnRestore = function() {
+	message.Debug("VirtIODev OnRestore");
+
+	var _this = this;
+	function convertToUint32Arr(varName) {
+		//message.Debug("convertToUint32Arr in VirtIODev/ varName : " + varName);
+		//message.Debug("old : " + _this[varName].len);
+		//message.Debug("oldjson : " + JSON.stringify(_this[varName]));
+		var cur = _this[varName];
+		var newArr = new Uint32Array(cur.len);
+		//newArr.set(cur);
+		utils.fillFromJSONObjArr(newArr, cur);
+		_this[varName] = newArr;
+		//message.Debug("new : " + _this[varName]);
+		//message.Debug("newjson : " + JSON.stringify(_this[varName]));
+	}
+
+	convertToUint32Arr('queuenum'); 
+	convertToUint32Arr('queueready');
+	convertToUint32Arr('queuepfn'); 
+	convertToUint32Arr('descaddr');
+	convertToUint32Arr('usedaddr');
+	convertToUint32Arr('availaddr');
+	convertToUint32Arr('lastavailidx'); 
+}
+
 
 VirtIODev.prototype.Reset = function() {
     this.status = 0x0;

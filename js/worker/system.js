@@ -88,13 +88,96 @@ function System() {
 
 // only support snapshot on or1k fast cpu
 System.prototype.CreateAndUploadSnapshot = function(url) {
-	var f = this.cpu.GetFlags();
-	message.Debug("please copy paste the flags : " + f);
-	this.cpu.GetState();
+	// heap snapshot
+	var f = this.cpu.cpu.GetFlags();
+	message.Debug("please copy paste the cpu flags : " + f);
+	this.cpu.cpu.GetState();
 	var heap = this.heap;
+	heap.length = heap.byteLength;
+
+	//message.Debug(this.cpu.toString());
+
+/*
+ 	//endianess compare check. 
+	var heap8 = new Uint8Array(heap);
+	for (var i = 0; i < heap8.length; i++) {
+		if (heap8[i] != 0) {
+			console.log("heap [" + i+ "] is : " + heap8[i]);
+			break;
+		}
+	}
+*/
+
 	utils.UploadBinaryResource(url, "heap", heap, 
-			function() {message.Debug("snapshot upload success to " + url)},
+			function() {message.Debug("heap snapshot upload success to " + url)},
 			function(error) {message.Debug(error)});
+	
+	// device snapshot
+	var dev = {};
+
+	// x <- no state to capture
+	// n <- not necessary for current version (or not)
+	var snapshotDevices = [
+		//"irqdev",				// n
+		//"timerdev", 			// x
+		"uartdev0",
+		"uartdev1",
+		//"ethdev",				// n
+		//"fbdev",				// n
+		"atadev",
+		//"kbddev",				// n
+		//"snddev",				// n
+		"rtcdev",
+		"virtio9pdev",
+		"virtiodev1",
+		"virtioinputdev",
+		"virtionetdev",
+		"virtioblockdev",
+		//"virtiodummydev",		//x
+		//"virtiogpudev",
+		"virtioconsoledev",
+		"virtiodev2",
+		"virtiodev3",
+			"timer"
+	];
+
+	for (var i = 0; i < snapshotDevices.length; i++) {
+		this.CaptureDevice(snapshotDevices[i], dev);
+	}
+
+	var json = JSON.stringify(dev);
+	
+	var temp = JSON.parse(json);
+	//message.Debug("test : " + JSON.stringify(temp['virtiodev1']['queuenum']));
+
+	utils.UploadTextResource(url, "dev", json,
+			function() {message.Debug("device snapshot upload success to " + url)},
+			function(error) {message.Debug(error)});
+};
+
+System.prototype.CaptureDevice = function(devName, obj) {
+	//message.Debug("Capture device : \"" + devName+ "\"");
+	var device = this[devName];
+	var stateVars = device.stateVars;
+	var o = {};
+	for (var i = 0; i < stateVars.length; i++) {
+		var v = stateVars[i];
+		o[v] = device[v];
+	
+		if (o[v].length) o[v].len = o[v].length;
+	}
+	obj[devName] = o;
+};
+
+System.prototype.RestoreDevice = function(devName, obj) {
+	//message.Debug("Restore Device : \"" + devName+"\"");
+	var device = this[devName];
+	var stateVars = device.stateVars;
+	for (var i = 0; i < stateVars.length; i++) {
+		var v = stateVars[i];
+		device[v] = obj[v];
+	}
+	if (device.OnRestore) device.OnRestore();
 }
 
 System.prototype.CreateCPU = function(cpuname, arch) {
@@ -294,23 +377,38 @@ System.prototype.LoadImageAndStart = function(url) {
 
 };
 
-System.prototype.LoadSnapshotAndStart = function(url) {
+System.prototype.LoadSnapshotAndStart = function(urls) {
     this.SendStringToTerminal("\r================================================================================");;
+	this.snapshotLoadBarrier = false;
 
 	this.SendStringToTerminal("\r\nLoading VM snapshot from web server. Please wait ...\r\n");
-	var loadData = {"heap" : false, "object" : false};
 	utils.LoadBinaryResource(
-		urls.heapURL,
-		function(buffer) {
-			loadData.heap = buffer;
-			this.OnSnapshotLoaded(buffer).bind(this);
-		}.bind(this),
-		function(error){message.Debug("Load heap snapshot fail!";) throw error;}
+		urls[0],
+		this.OnSnapshotHeapLoaded.bind(this),
+		function(error){message.Debug("Load heap snapshot fail!"); throw error;}
+	);
+
+	utils.LoadTextResource(
+		urls[1],
+		this.OnSnapshotDeviceLoaded.bind(this),
+		function(error){message.Debug("Load device snapshot fail!"); throw error;}
 	);
 };
 
-System.prototype.OnSnapshotLoaded = function(loadData) {
-	this.SendStringToTerminal("Decompressing snapshot...\r\n");
+System.prototype.OnSnapshotDeviceLoaded = function(str) {
+	this.SendStringToTerminal("Restoring devices...\r\n");
+	var obj = JSON.parse(str);
+	var keys = Object.keys(obj);
+	for (var i = 0; i < keys.length; i++) {
+		var devName = keys[i];
+		this.RestoreDevice(devName, obj[devName]);
+	}
+	
+	if (!(this.snapshotLoadBarrier ^= true)) this.OnSnapshotLoadComplete(); 
+};
+
+System.prototype.OnSnapshotHeapLoaded = function(loadData) {
+	this.SendStringToTerminal("Decompressing heap...\r\n");
 
 	/*
 	 * TODO (or not)
@@ -318,20 +416,40 @@ System.prototype.OnSnapshotLoaded = function(loadData) {
 	 * loading a snapshot of a different memory & device config.
 	 */
 
-	// updating heap
-	var length = 0;
-	bzip2.simple(buffer8, function(x){this.heap[length++] = x;}.bind(this));
+	//if compress
+	//var length = 0;
+	//var buffer8 = new Uint8Array(loadData);
+	//bzip2.simple(buffer8, function(x){this.heap[length++] = x;}.bind(this));
 
-	if (length != ram.heap.byteLength) 
-		message.Debug("snapshot heap size and current heap size doesn't match!");
+	this.SendStringToTerminal("Overwriting heap...\r\n");
+	var loadData8 = new Uint8Array(loadData);
+	var heap8 = new Uint8Array(this.heap);
+	heap8.set(loadData8, 0);
 
-	this.cpu.PutState();
-	this.cpu.SetFlags();
+/*
+	for (var i = 0; i < heap8.length; i++) {
+		if (heap8[i] != 0) {
+			console.log("heap [" + i+ "] is : " + heap8[i]);
+			break;
+		}
+	}
+*/
+	this.cpu.cpu.SetFlags(32895|0); // flags captured 
+	this.cpu.cpu.PutState();
 
-    message.Debug("Finished load process. You're ready to go");
+	//var length = this.ram.uint8mem.length;
+	this.ram.Little2Big(0);
+
+	//console.log(this.cpu.toString());
+
+	if (!(this.snapshotLoadBarrier ^= true)) this.OnSnapshotLoadComplete(); 
+}
+
+System.prototype.OnSnapshotLoadComplete = function () {
+    this.SendStringToTerminal("Finished load process.\r\n");
     this.status = SYSTEM_RUN;
-
     message.Send("execute", 0);
+	this.SendStringToTerminal("~ $");
 }
 
 System.prototype.PatchKernel = function(length)

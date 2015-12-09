@@ -29,6 +29,8 @@ RTCDev.prototype.Reset = function() {
 }
 
 
+RTCDev.prototype.stateVars = ['ctrl'];
+
 RTCDev.prototype.ReadReg32 = function (addr) {
     switch(addr)
     {

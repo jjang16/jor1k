@@ -26,9 +26,10 @@ function jor1kGUI(parameters)
 
     this.params.path = this.params.path || "";
 
-	this.params.system.snapshotURL = this.params.system.snapshotURL || "";
+	this.params.system.snapshotHeapURL = this.params.system.snapshotHeapURL || "";
+	this.params.system.snapshotDevURL = this.params.system.snapshotDevURL || "";
     this.params.system.kernelURL = this.params.system.kernelURL || "vmlinux.bin.bz2";
-    this.params.system.memorysizstem.memorysize || 32;
+    this.params.system.memorysize = this.params.system.memorysize || 32;
     this.params.system.arch = this.params.system.arch || "or1k";
     this.params.system.cpu = this.params.system.cpu || "asm";
     this.params.system.ncores = this.params.system.ncores || 1;
@@ -41,6 +42,8 @@ function jor1kGUI(parameters)
 
     // add path to every URL
     this.params.system.kernelURL = this.params.path + this.params.system.kernelURL;
+	this.params.system.snapshotHeapURL = this.params.path + this.params.system.snapshotHeapURL;
+	this.params.system.snapshotDevURL = this.params.path + this.params.system.snapshotDevURL;
     this.params.fs.basefsURL = this.params.path + this.params.fs.basefsURL;
     if (this.params.fs.extendedfsURL) {
         this.params.fs.extendedfsURL = this.params.path + this.params.fs.extendedfsURL;
@@ -205,6 +208,10 @@ jor1kGUI.prototype.ChangeCore = function(core) {
     message.Send("ChangeCore", core);
 };
 
+jor1kGUI.prototype.SnapshotInit = function() {
+	message.Send("CreateSnapshot", "http://localhost:3000/wow");
+}
+
 
 jor1kGUI.prototype.Reset = function () {
     this.stop = false; // VM Stopped/Aborted
@@ -212,10 +219,11 @@ jor1kGUI.prototype.Reset = function () {
     this.executepending = false; // if we rec an execute message while paused      
     message.Send("Init", this.params.system);
     message.Send("Reset");
-	if (this.params.system.snapshotURL == "")
+	if (this.params.system.snapshotHeapURL == this.params.path)
     	message.Send("LoadAndStart", this.params.system.kernelURL);
 	else
-		message.Send("LoadAndStartSnapshot", this.params.system.snapshotURL);
+		message.Send("LoadAndStartSnapshot", 
+				[this.params.system.snapshotHeapURL, this.params.system.snapshotDevURL]);
 
     message.Send("LoadFilesystem", this.params.fs);
 

@@ -31,6 +31,16 @@ VirtioNET.prototype.Reset = function() {
     this.receivebuffer = new Array();
 }
 
+VirtioNET.prototype.stateVars = ['configspace', 'replybuffer', 'replybuffersize', 
+	'receivebufferdesc', 'receivebuffer'];
+
+VirtioNET.prototype.OnRestore = function() {
+	message.Debug("VirtioNET OnRestore");
+	var newReplyBuffer = new Uint8Array(this.replybuffer.len);
+	//newReplyBuffer.set(this.replybuffer);
+	utils.fillFromJSONObjArr(newReplyBuffer, this.replybuffer);
+	this.replybuffer = newReplyBuffer;
+}
 
 VirtioNET.prototype.Receive = function(buffer) {
     //message.Debug("Received packet of size " + buffer.byteLength);

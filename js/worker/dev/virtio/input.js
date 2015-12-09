@@ -51,6 +51,22 @@ function VirtioInput(ramdev) {
     this.Reset();
 }
 
+VirtioInput.prototype.stateVars = ['configspace', 'replybuffersize', 
+	'replybuffer', 'receivebufferdesc'];
+
+VirtioInput.prototype.OnRestore = function() {
+	message.Debug("VirtioInput OnRestore");
+	var newConfigSpace = new Uint8Array(this.configspace.len);
+	//newConfigSpace.set(this.configspace);
+	utils.fillFromJSONObjArr(newConfigSpace, this.configspace);
+	this.configspace = newConfigSpace;
+
+	var newReplyBuffer = new Uint8Array(this.replybuffer.len);
+	//newReplyBuffer.set(this.replybuffer);
+	utils.fillFromJSONObjArr(newReplyBuffer, this.replybuffer);
+	this.replybuffer = newReplyBuffer;
+}
+
 VirtioInput.prototype.Reset = function() {
     this.receivebufferdesc = new Array();
 }

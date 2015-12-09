@@ -88,6 +88,25 @@ ATADev.prototype.Reset = function() {
     this.readbuffermax = 256;
 }
 
+ATADev.prototype.stateVars = ['identifybuffer', 'DCR', 'DR', 'SCR', 'SNR', 'SR', 'FR', 'ER',
+	'CR', 'lcyl', 'hcyl', 'select', 'driveselected', 'readbufferindex', 'readbuffermax', 
+	'diskbuffer', 'heads', 'sectors', 'cylinders', 'nsectors'];
+
+ATADev.prototype.OnRestore = function() {
+	message.Debug("ATADev OnRestore");
+
+	var newIdentifyBuffer = new Uint16Array(this.identifybuffer.len);
+	//newIdentifyBuffer.set(this.identifybuffer);
+	utils.fillFromJSONObjArr(newIdentifyBuffer, this.identifybuffer);
+	this.identifybuffer = newIdentifyBuffer;
+	this.readbuffer = this.identifybuffer;
+
+	var newDiskBuffer = new Uint16Array(this.diskbuffer.len);
+	//newDiskBuffer.set(this.diskbuffer);
+	utils.fillFromJSONObjArr(newDiskBuffer, this.diskbuffer);
+	this.diskbuffer = newDiskBuffer;
+}
+
 ATADev.prototype.SetBuffer = function(buffer) {
     this.diskbuffer = new Uint16Array(buffer);
     this.heads = 16;

@@ -344,6 +344,7 @@ FS.prototype.CreateDirectory = function(name, parentid) {
 }
 
 FS.prototype.CreateFile = function(filename, parentid) {
+
     var x = this.CreateInode();
     x.name = filename;
     x.parentid = parentid;

@@ -146,6 +146,7 @@ RAM.prototype.Read8LittleTemplate = function(addr) {
     if (addr >= 0) {
         if (this.uint8mem.byteLength <= addr) {
             message.Debug("Error in Read8Little: read above upper boundary");
+			console.trace();
             message.Abort();
         }
         return this.uint8mem[addr];

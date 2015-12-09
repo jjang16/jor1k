@@ -33,6 +33,16 @@ function VirtioBlock(ramdev) {
     this.Reset();
 }
 
+VirtioBlock.prototype.stateVars = ['replybuffer', 'replybuffersize', 'buffer'];
+
+VirtioBlock.prototype.OnRestore = function() {
+	message.Debug("VirtioBlock OnRestore");
+	var newReplyBuffer = new Uint8Array(this.replybuffer.len);
+	//newReplyBuffer.set(this.replybuffer);
+	utils.fillFromJSONObjArr(newReplyBuffer, this.replybuffer);
+	this.replybuffer = newReplyBuffer;
+}
+
 VirtioBlock.prototype.Reset = function() {
 }
 

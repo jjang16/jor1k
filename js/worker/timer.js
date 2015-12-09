@@ -33,6 +33,9 @@ function Timer(_ticksperms, _loopspersecond) {
     this.UpdateTimings();
 }
 
+Timer.prototype.stateVars = 
+	['baserealtime', 'realtime', 'lastsystemticks', 'systemtime', 'correction', 'oldcorrection',
+		'steps', 'nins', 'lastlooptime', 'ipms', 'instructionsperloop', 'timercyclesperinstruction'];
 
 // nins: instructions executed in last loop
 // ticks: The current value of the TTCR register

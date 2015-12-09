@@ -304,7 +304,7 @@ KeyboardDev.prototype.Reset = function() {
 }
 
 KeyboardDev.prototype.OnKeyDown = function(event) {
-    this.key = kc2kc[event.keyCode] | 0x0;
+	this.key = kc2kc[event.keyCode] | 0x0;
     if (this.key == 0) return;
     this.fifo.push(this.key);
     this.intdev.RaiseInterrupt(0x5);

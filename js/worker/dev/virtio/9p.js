@@ -68,6 +68,17 @@ function Virtio9p(ramdev, filesystem) {
     this.Reset();
 }
 
+Virtio9p.prototype.stateVars = ['msize', 'replybuffer', 'replybuffersize', 'fids'];
+
+Virtio9p.prototype.OnRestore = function() {
+	message.Debug("Virtio9p OnRestore");
+
+	var newArr = new Uint8Array(this.replybuffer.len);
+	//newArr.set(this.replybuffer);
+	utils.fillFromJSONObjArr(newArr, this.replybuffer);
+	this.replybuffer = newArr;
+}
+
 Virtio9p.prototype.Createfid = function(inode, type, uid) {
 	return {inodeid: inode, type: type, uid: uid};
 }

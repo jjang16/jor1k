@@ -33,6 +33,17 @@ function VirtioConsole(ramdev) {
     this.Reset();
 }
 
+VirtioConsole.prototype.stateVars = ['replybuffersize', 'replybuffer'];
+
+VirtioConsole.prototype.OnRestore = function() {
+	message.Debug("VirtioConsole OnRestore");
+
+	var newArr = new Uint8Array(this.replybuffer.len);
+	//newArr.set(this.replybuffer);
+	utils.fillFromJSONObjArr(newArr, this.replybuffer);
+	this.replybuffer = newArr;
+}
+
 VirtioConsole.prototype.Receive = function(chars) {
 
 }
