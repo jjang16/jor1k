@@ -248,6 +248,23 @@ function EthDev(ram, intdev, mac) {
         this.currRX = (this.TX_BD_NUM << 1);
     };
 
+	this.stateVars = ['MODER', 'INT_SOURCE', 'INT_MASK', 'IPGT', 'IPGR1', 'IPGR2',
+		'PACKETLEN', 'COLLCONF', 'TX_BD_NUM', 'CTRLMODER', 'MIIMODER', 'MIICOMMAND',
+		'MIIADDRESS', 'MIITX_DATA', 'MIIRX_DATA', 'MIISTATUS', 'MAC_ADDR0', 
+		'MAC_ADDR1', 'ETH_HASH0_ADR', 'ETH_HASH1_ADR', 'ETH_TXCTRL', 'BD', 
+		'MIIregs', 'currRX'];
+
+	this.OnRestore = function() {
+		message.Debug("ethDev OnRestore");
+		var newBD = new Uint32Array(this.BD.len);
+		utils.fillFromJSONObjArr(newBD, this.BD);
+		this.BD = newBD;
+
+		var newMIIregs = new Uint32Array(this.MIIregs.len);
+		utils.fillFromJSONObjArr(newMIIregs, this.MIIregs);
+		this.MIIregs = newMIIregs;
+	};
+
     this.Receive = function(data_arraybuffer) {
         //check RXEN
         if ((this.MODER & 0x1) == 0) {

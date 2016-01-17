@@ -122,7 +122,7 @@ System.prototype.CreateAndUploadSnapshot = function(url) {
 		//"timerdev", 			// x
 		"uartdev0",
 		"uartdev1",
-		//"ethdev",				// n
+		"ethdev",				
 		//"fbdev",				// n
 		"atadev",
 		//"kbddev",				// n
