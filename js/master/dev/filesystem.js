@@ -1,4 +1,4 @@
-var message = require('../messagehandler.js');
+var message = require('../messagehandler');
 var download = require('../../lib/download');
 var utils = require('../utils.js');
 
