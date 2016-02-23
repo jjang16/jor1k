@@ -52,7 +52,7 @@ function jor1kGUI(parameters)
     this.params.userid = this.params.userid || "";
 
     // ----------------------
-    this.worker = new Worker("jor1k/bin/jor1k-worker-min.js");
+    this.worker = new Worker("bower_modules/jor1k/bin/jor1k-worker-min.js");
     message.SetWorker(this.worker);
     // ----
 
