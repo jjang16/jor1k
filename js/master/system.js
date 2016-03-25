@@ -208,8 +208,12 @@ jor1kGUI.prototype.ChangeCore = function(core) {
     message.Send("ChangeCore", core);
 };
 
-jor1kGUI.prototype.SnapshotInit = function() {
-	message.Send("CreateSnapshot", "http://localhost:3000/wow");
+/**
+ * Takes snapshot and sends data to the target url
+ * see worker util file to find communication implementation 
+ */
+jor1kGUI.prototype.SnapshotInit = function(url) {
+	message.Send("CreateSnapshot", url);
 }
 
 
